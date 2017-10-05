@@ -66,7 +66,8 @@ class tester():
 	    	plt.matshow(confMatrix/float(self.testIter), vmin=0., vmax=1.0, cmap=plt.cm.binary)
 	    	plt.colorbar()
 	    	#plt.show()
-		plt.savefig('./conf_mat_'+self.datasetName+'.png', dpi=100)
+		#plt.figure(figsize=(20,20))
+		plt.savefig('./confusion_matrices/'+self.datasetName+'.png', dpi=200)
 
 
 #--------------------------------------#
@@ -110,31 +111,32 @@ def get_precision_recall(network, testingData, queryData, featuresFileList, inSh
 DATA_ROOT = "/media/jedrzej/SAMSUNG/DATA/"
 MODELS_ROOT = "/media/jedrzej/SAMSUNG/Python/models/"
 
-#model = MODELS_ROOT+"im2bound_ILSVRC2012/deploy.prototxt"
-#weights = MODELS_ROOT+"im2bound_ILSVRC2012/dmt_iter_150000.caffemodel"
+model = MODELS_ROOT+"im2bound_ILSVRC2012/deploy.prototxt"
+weights = MODELS_ROOT+"im2bound_ILSVRC2012/dmt_iter_150000.caffemodel"
 
-model = MODELS_ROOT+"im2bound_cub_200_2011/deploy.prototxt"
-weights = MODELS_ROOT+"im2bound_cub_200_2011/im2bound_iter_45000.caffemodel"
+#model = MODELS_ROOT+"im2bound_cub_200_2011/deploy.prototxt"
+#weights = MODELS_ROOT+"im2bound_cub_200_2011/im2bound_iter_55000.caffemodel"
 
 #ILSVRC2012_test = tester(DATA_ROOT+"ILSVRC2012/inception_features/", model, weights, "ILSVRC2012")	
 #ILSVRC2012_test.test_DMT_on_data()
-'''
-indoorCVPR_test = tester(DATA_ROOT+"indoorCVPR_09/inception_features/", model, weights, "indoorCVPR_fg")	
+
+indoorCVPR_test = tester(DATA_ROOT+"indoorCVPR_09/inception_features/", model, weights, "indoorCVPR")	
 indoorCVPR_test.test_DMT_on_data()
-CALTECH256_test = tester(DATA_ROOT+"CALTECH_256/inception_features/", model, weights, "caltech256_fg")
+
+CALTECH256_test = tester(DATA_ROOT+"CALTECH_256/inception_features/", model, weights, "caltech256")
 CALTECH256_test.test_DMT_on_data()
 
 flowers_test = tester(DATA_ROOT+"102flowers/inception_features/", model, weights, "102flowers")
 flowers_test.test_DMT_on_data()
-'''
-#cars196_test = tester(DATA_ROOT+"Cars-196/inception_features/", model, weights, "cars196_fg")
-#cars196_test.test_DMT_on_data()
 
-BIRDS_test = tester(DATA_ROOT+"CUB_200_2011/inception_features_TEST/", model, weights, "birds2")
+cars196_test = tester(DATA_ROOT+"Cars-196/inception_features/", model, weights, "cars196")
+cars196_test.test_DMT_on_data()
+
+BIRDS_test = tester(DATA_ROOT+"CUB_200_2011/inception_features_TEST/", model, weights, "birds")
 BIRDS_test.test_DMT_on_data()
 
-#SUN_test = tester(DATA_ROOT+"SUN_attribute/inception_features/", model, weights, "SUN")
-#SUN_test.test_DMT_on_data()
+SUN_test = tester(DATA_ROOT+"SUN_attribute/inception_features/", model, weights, "SUN")
+SUN_test.test_DMT_on_data()
 
 
 
