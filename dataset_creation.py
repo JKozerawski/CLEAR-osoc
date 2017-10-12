@@ -68,7 +68,7 @@ def split_dataset_to_finetune(featuresPath, featuresPathFT, featuresPathTest):
 		shutil.copyfile(j, featuresPathTest+j.split("/")[-1])
 	
 def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate = 5):
-	inShape = 2048
+	inShape = 1024
 	outShape = 1025
 
 	if not os.path.exists(pathToSave):
@@ -95,9 +95,9 @@ def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate 
 		#print "Got input data"
 		category_name = fFile.split("/")[-1].split(".")[0]			# get category name
 		negatives = get_negative_data(category_name, random_features_dict)
-		pos_labels = np.ones((2*len(dataT)))
+		pos_labels = np.ones((len(dataT)))
 		neg_labels = -1*np.ones((len(negatives)))
-		svm_data = np.concatenate((dataT[:,:inShape/2],dataT[:,inShape/2:],negatives),axis = 0)
+		svm_data = np.concatenate((dataT,negatives),axis = 0)
 		svm_labels = np.concatenate((pos_labels, neg_labels))
 		svm_data, svm_labels = shuffle_in_unison(svm_data, svm_labels)
 		clf = SVC(0.1,kernel = 'linear')			# define SVM classifier
@@ -226,5 +226,5 @@ def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate 
 #split_dataset_to_finetune("/media/jedrzej/SAMSUNG/DATA/CUB_200_2011/inception_features/", "/media/jedrzej/SAMSUNG/DATA/CUB_200_2011/inception_features_FT/", "/media/jedrzej/SAMSUNG/DATA/CUB_200_2011/inception_features_TEST/")
 
 
-createRegularDMTdata("/media/jedrzej/SAMSUNG/DATA/ILSVRC2012/inception_features_double/", "/media/jedrzej/SAMSUNG/DATA/ILSVRC2012/", "/media/jedrzej/SAMSUNG/DATA/ILSVRC2012/im2bound_data/")
+createRegularDMTdata("/media/jedrzej/Seagate/DATA/ILSVRC2012/inception_features/", "/media/jedrzej/Seagate/DATA/ILSVRC2012/", "/media/jedrzej/Seagate/DATA/ILSVRC2012/img2bound_data/")
 
