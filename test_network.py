@@ -50,6 +50,7 @@ class tester():
 			test = np.asarray(testingData[i])	
 			for j in xrange(self.noOfCategories):
 				out = np.asarray(querySVMs[j]).reshape(self.outShape)
+				if(self.inShape==2048): test = test[:,:1024]
 				tot, pos = self.test_SVM_hyperplane(test,out[1:],out[0])
 				confusionMatrix[i,j] = float(pos)/tot
 				del out, tot, pos	
@@ -111,19 +112,22 @@ def get_precision_recall(network, testingData, queryData, featuresFileList, inSh
 DATA_ROOT = "/media/jedrzej/SAMSUNG/DATA/"
 MODELS_ROOT = "/media/jedrzej/SAMSUNG/Python/models/"
 
-model = MODELS_ROOT+"im2bound_ILSVRC2012/deploy.prototxt"
-weights = MODELS_ROOT+"im2bound_ILSVRC2012/dmt_iter_150000.caffemodel"
+#model = MODELS_ROOT+"im2bound_ILSVRC2012/deploy.prototxt"
+#weights = MODELS_ROOT+"im2bound_ILSVRC2012/dmt_iter_150000.caffemodel"
 
 #model = MODELS_ROOT+"im2bound_cub_200_2011/deploy.prototxt"
-#weights = MODELS_ROOT+"im2bound_cub_200_2011/im2bound_iter_55000.caffemodel"
+#weights = MODELS_ROOT+"im2bound_cub_200_2011/im2bound_iter_140000.caffemodel"
+
+model = MODELS_ROOT+"img2bound_ILSVRC2012_double/deploy.prototxt"
+weights = MODELS_ROOT+"img2bound_ILSVRC2012_double/img2bound_iter_215000.caffemodel"
 
 #ILSVRC2012_test = tester(DATA_ROOT+"ILSVRC2012/inception_features/", model, weights, "ILSVRC2012")	
 #ILSVRC2012_test.test_DMT_on_data()
-
+'''
 indoorCVPR_test = tester(DATA_ROOT+"indoorCVPR_09/inception_features/", model, weights, "indoorCVPR")	
 indoorCVPR_test.test_DMT_on_data()
 
-CALTECH256_test = tester(DATA_ROOT+"CALTECH_256/inception_features/", model, weights, "caltech256")
+CALTECH256_test = tester(DATA_ROOT+"CALTECH_256/inception_features_double/", model, weights, "caltech256_d", layerName = 'dmt3', inShape=2048)
 CALTECH256_test.test_DMT_on_data()
 
 flowers_test = tester(DATA_ROOT+"102flowers/inception_features/", model, weights, "102flowers")
@@ -132,13 +136,14 @@ flowers_test.test_DMT_on_data()
 cars196_test = tester(DATA_ROOT+"Cars-196/inception_features/", model, weights, "cars196")
 cars196_test.test_DMT_on_data()
 
-BIRDS_test = tester(DATA_ROOT+"CUB_200_2011/inception_features_TEST/", model, weights, "birds")
+BIRDS_test = tester(DATA_ROOT+"CUB_200_2011/inception_features_TEST/", model, weights, "birds_fg3")
 BIRDS_test.test_DMT_on_data()
 
 SUN_test = tester(DATA_ROOT+"SUN_attribute/inception_features/", model, weights, "SUN")
 SUN_test.test_DMT_on_data()
-
-
+'''
+DOUBLE_test = tester(DATA_ROOT+"CALTECH_256/inception_features_double/", model, weights, "caltech256_d", layerName = 'dmt3', inShape=2048)
+DOUBLE_test.test_DMT_on_data()
 
 
 
