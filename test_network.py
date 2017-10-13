@@ -32,7 +32,6 @@ class tester():
 		for feat_file_i, feat_file in enumerate(featuresFileList):
 			with h5py.File(feat_file,'r') as f:
 				feats = np.array(f.get('data'))	
-
 			all_indices = np.random.choice(len(feats), self.noOfExamples+1, replace=False)	# choose 20 images at random for testing and 1 as a query
 			queryData.append(feats[all_indices[:1],...])
 			testingData.append(feats[all_indices[1:],...])
@@ -63,9 +62,8 @@ class tester():
 			self.network.blobs['data'].reshape(self.noOfCategories,self.inShape)
 			querySVMs = self.network.forward(data = np.asarray(queryData).reshape(self.noOfCategories,self.inShape))[self.layerName].copy()
 			confMatrix += self.get_confusion_matrix(testingData, querySVMs)
-
+		confMatrix = confMatrix/float(self.testIter)
 		# calculate precision and recall:
-		
 		mAP = 0.
 		mAR = 0.
 		for j in xrange(confMatrix.shape[1]):
@@ -78,11 +76,12 @@ class tester():
 			recall = true_positives / (true_positives + false_negatives)
 			mAP += precision
 			mAR += recall
+		#print mAR, mAP, confMatrix.shape[1]
 		mAP = round((mAP / confMatrix.shape[1]), 2)	# mean Average Precision
 		mAR = round((mAR / confMatrix.shape[1]), 2)	# mean Average Recall
 		if(np.isinf(mAP)): mAP = 0
 		if(np.isinf(mAR)): mAR = 0
-	    	plt.matshow(confMatrix/float(self.testIter), vmin=0., vmax=1.0, cmap=plt.cm.binary)
+	    	plt.matshow(confMatrix, vmin=0., vmax=1.0, cmap=plt.cm.binary)
 	    	plt.colorbar()
 		plt.suptitle('Precision = '+str(mAP)+' , Recall = '+str(mAR), fontsize=14, fontweight='bold')
 	    	#plt.show()
@@ -123,34 +122,15 @@ def testAllSnapshotsOnDataSet(dataset, N):
 
 DATA_ROOT = "/media/jedrzej/Seagate/DATA/"
 MODELS_ROOT = "/media/jedrzej/Seagate/Python/models/"
-testAllSnapshotsOnDataSet("CALTECH_256", 28)
+datasets = ["CALTECH_256", "102flowers", "CUB_200_2011", "SUN_attribute", "indoorCVPR_09", "Cars-196"]
 
-datasets = ["CALETECH_256", "102flowers", "CUB_200_2011", "SUN_attribute", "indoorCVPR_09"]
+#testAllSnapshotsOnDataSet(datasets[4], 28)
 
 
-#ILSVRC2012_test = tester(DATA_ROOT+"ILSVRC2012/inception_features/", model, weights, "ILSVRC2012")	
-#ILSVRC2012_test.test_DMT_on_data()
-'''
-indoorCVPR_test = tester(DATA_ROOT+"indoorCVPR_09/inception_features/", model, weights, "indoorCVPR")	
-indoorCVPR_test.test_DMT_on_data()
-
-CALTECH256_test = tester(DATA_ROOT+"CALTECH_256/inception_features_double/", model, weights, "caltech256_d", layerName = 'dmt3', inShape=2048)
-CALTECH256_test.test_DMT_on_data()
-
-flowers_test = tester(DATA_ROOT+"102flowers/inception_features/", model, weights, "102flowers")
-flowers_test.test_DMT_on_data()
-
-cars196_test = tester(DATA_ROOT+"Cars-196/inception_features/", model, weights, "cars196")
-cars196_test.test_DMT_on_data()
-
-BIRDS_test = tester(DATA_ROOT+"CUB_200_2011/inception_features_TEST/", model, weights, "birds_fg3")
-BIRDS_test.test_DMT_on_data()
-
-SUN_test = tester(DATA_ROOT+"SUN_attribute/inception_features/", model, weights, "SUN")
-SUN_test.test_DMT_on_data()
-
-DOUBLE_test = tester(DATA_ROOT+"CALTECH_256/inception_features_double/", model, weights, "caltech256_d", layerName = 'dmt3', inShape=2048)
-DOUBLE_test.test_DMT_on_data()
-'''
+model = MODELS_ROOT+"img2bound_ILSVRC2012/deploy.prototxt"
+weights = MODELS_ROOT+"img2bound_ILSVRC2012/dmt_iter_150000.caffemodel"
+for data in datasets:
+	datasetTester = tester(DATA_ROOT+data+"/inception_features/", model, weights, datasetName = data+"_TRUE", layerName = 'dmt3_3', inShape=1024)
+	p,r = datasetTester.test_DMT_on_data()
 
 
