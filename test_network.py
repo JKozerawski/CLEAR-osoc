@@ -14,7 +14,7 @@ from shuffle_in_unison import shuffle_in_unison
 from matplotlib import pyplot as plt
 
 class tester():
-	def __init__(self, featuresPath, network_model, network_weigths, datasetName, layerName = 'dmt3_3', testIter = 10, noOfExamples = 15, inShape = 1024, outShape = 1025):
+	def __init__(self, featuresPath, network_model, network_weigths, datasetName, layerName = 'fc5', testIter = 10, noOfExamples = 15, inShape = 1024, outShape = 1025):
 		self.featuresPath = featuresPath
 		self.network = caffe.Net(network_model,network_weigths, caffe.TEST)
 		self.layerName = layerName
@@ -50,7 +50,6 @@ class tester():
 			test = np.asarray(testingData[i])	
 			for j in xrange(self.noOfCategories):
 				out = np.asarray(querySVMs[j]).reshape(self.outShape)
-				if(self.inShape==2048): test = test[:,:1024]
 				tot, pos = self.test_SVM_hyperplane(test,out[1:],out[0])
 				confusionMatrix[i,j] = float(pos)/tot
 				del out, tot, pos	
@@ -64,62 +63,70 @@ class tester():
 			self.network.blobs['data'].reshape(self.noOfCategories,self.inShape)
 			querySVMs = self.network.forward(data = np.asarray(queryData).reshape(self.noOfCategories,self.inShape))[self.layerName].copy()
 			confMatrix += self.get_confusion_matrix(testingData, querySVMs)
+
+		# calculate precision and recall:
+		
+		mAP = 0.
+		mAR = 0.
+		for j in xrange(confMatrix.shape[1]):
+			true_positives = confMatrix[j,j]
+			false_negatives = 1.0 - true_positives
+			false_positives = np.sum(confMatrix[:,j])-true_positives
+			true_negatives = confMatrix.shape[0]-1.0 - false_positives
+			precision = true_positives / (true_positives + false_positives)
+			if(np.isnan(precision)): precision = 0.
+			recall = true_positives / (true_positives + false_negatives)
+			mAP += precision
+			mAR += recall
+		mAP = round((mAP / confMatrix.shape[1]), 2)	# mean Average Precision
+		mAR = round((mAR / confMatrix.shape[1]), 2)	# mean Average Recall
+		if(np.isinf(mAP)): mAP = 0
+		if(np.isinf(mAR)): mAR = 0
 	    	plt.matshow(confMatrix/float(self.testIter), vmin=0., vmax=1.0, cmap=plt.cm.binary)
 	    	plt.colorbar()
+		plt.suptitle('Precision = '+str(mAP)+' , Recall = '+str(mAR), fontsize=14, fontweight='bold')
 	    	#plt.show()
 		#plt.figure(figsize=(20,20))
 		plt.savefig('./confusion_matrices/'+self.datasetName+'.png', dpi=200)
+		plt.clf()
+		return mAP, mAR
 
+#-----------------------------------------------------------------------------#	
+def testAllSnapshotsOnDataSet(dataset, N):
+	plotPrecision = np.zeros((N))
+	plotRecall = np.zeros((N))	
+	for i in xrange(1,N+1):
+		model = MODELS_ROOT+"img2bound_ILSVRC2012_NEW/deploy.prototxt"
+		weights = MODELS_ROOT+"img2bound_ILSVRC2012_NEW/img2bound_iter_"+str(i)+"0000.caffemodel"
+	
+		datasetTester = tester(DATA_ROOT+dataset+"/inception_features/", model, weights, datasetName = dataset+"_"+str(i), layerName = 'fc5', inShape=1024)
+		plotPrecision[i-1], plotRecall[i-1] = datasetTester.test_DMT_on_data()
 
-#--------------------------------------#
-'''
-def get_precision_recall(network, testingData, queryData, featuresFileList, inShape=1024, outShape=1025):
-		layerName = 'dmt3_3'
-		totalPrecision = []
-		totalRecall = []
-		print "Done getting data"
-		for i, test_file in enumerate(testingData):
-			category_name = featuresFileList[i].split("/")[-1].split(".")[0]	# get the name of a category
-			testCurrCategory = np.asarray(testingData[i])	
-			queryCurrCategory = np.asarray(queryData[i])
-			noOfExamples = len(testCurrCategory)
-			testIter = len(queryCurrCategory)
-			negatives = np.asarray(testingData)
-			negatives = np.delete(negatives,[i],axis=0).reshape((len(featuresFileList)-1)*noOfExamples,inShape)
+	plotF1score = 2*np.multiply(plotPrecision,plotRecall)/(plotPrecision+plotRecall)
 
-			print category_name
-			precision = 0
-			recall = 0
+	plt.plot(plotPrecision, 'r')
+	plt.xlabel('iteration')
+	plt.ylabel('precision')
+	plt.savefig("./testing_results/"+dataset+"_precision.png") #save image as png
+	plt.clf()
+	plt.plot(plotRecall, 'b')
+	plt.xlabel('iteration')
+	plt.ylabel('recall')
+	plt.savefig("./testing_results/"+dataset+"_recall.png") #save image as png
+	plt.clf()
+	plt.plot(plotF1score, 'g')
+	plt.xlabel('iteration')
+	plt.ylabel('f1 score')
+	plt.savefig("./testing_results/"+dataset+"_f1_score.png") #save image as png
+	plt.clf()
+#-----------------------------------------------------------------------------#	
 
-			for idx in xrange(testIter):
-				f = queryCurrCategory[idx,:].reshape(1,inShape)
-				out = network.forward(data = f)[layerName].copy().reshape(outShape)
-				tot, pos = test_SVM_hyperplane(testCurrCategory,out[1:],out[0])
-				tot2, pos2 = test_SVM_hyperplane(negatives,out[1:],out[0])
-				if(pos>0 or pos2>0): precision += round((float(pos)/(pos+pos2)),2)
-				else: precision += 0
-				recall += round((float(pos)/tot),2)
-			precision = precision/float(testIter)
-			recall = recall/float(testIter)
-			print "Precision:",str(precision)
-			print "Recall:",str(recall)
-			print "F1-score:",str(2*(precision*recall)/(precision+recall))
-			totalPrecision.append(precision)
-			totalRecall.append(recall)
-		return totalPrecision, totalRecall
-'''	
-		
-DATA_ROOT = "/media/jedrzej/SAMSUNG/DATA/"
-MODELS_ROOT = "/media/jedrzej/SAMSUNG/Python/models/"
+DATA_ROOT = "/media/jedrzej/Seagate/DATA/"
+MODELS_ROOT = "/media/jedrzej/Seagate/Python/models/"
+testAllSnapshotsOnDataSet("CALTECH_256", 28)
 
-#model = MODELS_ROOT+"im2bound_ILSVRC2012/deploy.prototxt"
-#weights = MODELS_ROOT+"im2bound_ILSVRC2012/dmt_iter_150000.caffemodel"
+datasets = ["CALETECH_256", "102flowers", "CUB_200_2011", "SUN_attribute", "indoorCVPR_09"]
 
-#model = MODELS_ROOT+"im2bound_cub_200_2011/deploy.prototxt"
-#weights = MODELS_ROOT+"im2bound_cub_200_2011/im2bound_iter_140000.caffemodel"
-
-model = MODELS_ROOT+"img2bound_ILSVRC2012_double/deploy.prototxt"
-weights = MODELS_ROOT+"img2bound_ILSVRC2012_double/img2bound_iter_215000.caffemodel"
 
 #ILSVRC2012_test = tester(DATA_ROOT+"ILSVRC2012/inception_features/", model, weights, "ILSVRC2012")	
 #ILSVRC2012_test.test_DMT_on_data()
@@ -141,9 +148,9 @@ BIRDS_test.test_DMT_on_data()
 
 SUN_test = tester(DATA_ROOT+"SUN_attribute/inception_features/", model, weights, "SUN")
 SUN_test.test_DMT_on_data()
-'''
+
 DOUBLE_test = tester(DATA_ROOT+"CALTECH_256/inception_features_double/", model, weights, "caltech256_d", layerName = 'dmt3', inShape=2048)
 DOUBLE_test.test_DMT_on_data()
-
+'''
 
 
