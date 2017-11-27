@@ -1,4 +1,6 @@
-# img2bound
+# CLEAR
 
-Repository for img2bound project.
+Repository for CLEAR project.
 To be updated.
+
+Project regarding One-Shot One-Class image recognition.
