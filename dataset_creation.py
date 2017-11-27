@@ -10,13 +10,25 @@ import os
 from time import time
 import cPickle as pickle
 from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression
 import shutil
+from scipy.spatial import distance
 
 from shuffle_in_unison import shuffle_in_unison
 
 DATA_ROOT = "/media/jedrzej/SAMSUNG/DATA/"
 
+def divideClusterIntoCenterAndSurface(features):
+	clusterCenter = np.mean(features,axis = 0)
+	dst = distance.cdist(features,clusterCenter.reshape(1,1024))
 
+	cutOffDistanceMin = np.percentile(dst,25)
+
+	cutOffDistanceMax = np.percentile(dst,90)
+
+	centralFeatures = features[np.where(dst<=cutOffDistanceMin)[0],:]
+	surfaceFeatures = features[np.where(dst>=cutOffDistanceMax)[0],:]
+	return centralFeatures, surfaceFeatures
 
 def get_k_features_dict(featuresPath, datasetPath, k = 5):
 	# k = no of examples per category
@@ -67,10 +79,10 @@ def split_dataset_to_finetune(featuresPath, featuresPathFT, featuresPathTest):
 	for j in test_data:
 		shutil.copyfile(j, featuresPathTest+j.split("/")[-1])
 	
-def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate = 5):
+def createRegularTrainingData(featuresPath, datasetPath, pathToSave, howManyToCreate = 5):
 	inShape = 1024
 	outShape = 1025
-
+	# create saving folder if does not exist
 	if not os.path.exists(pathToSave):
     		os.makedirs(pathToSave)
 	random_features_dict =  get_k_features_dict(featuresPath, datasetPath, 7)	# get at random k features from every category
@@ -79,41 +91,53 @@ def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate 
 	train_input = np.zeros((1,inShape))
 	val_output = np.zeros((1,outShape))
 	train_output = np.zeros((1,outShape))
+	# Iterate through all .hdf5 files (all categories):
+	print len(fileList)
 	for fFile_i, fFile in enumerate(fileList):
 		sTime = time()
-
 		with h5py.File(fFile,'r') as f:
 			dataT = np.array(f.get('data'))
-		#random_samples = np.random.choice(len(dataT), 600, replace=False)	# choose 'noOfExamples' images at random
-		train_data = dataT#[random_samples,:]
+
+		#pos, neg = divideClusterIntoCenterAndSurface(dataT)
+
+		train_data = dataT
 		del f
 		n_val = int(0.3*len(train_data))
 		val_indices = np.random.choice(len(train_data), n_val, replace=False)	# choose 30% of images at random for validation
 		val_data = train_data[val_indices,...]
 		train_data = np.delete(train_data,[val_indices],axis=0)
+		#print len(val_data), len(train_data)
+		
+
+		# CREATE REGULAR SVM BOUNDS:
 		
 		#print "Got input data"
 		category_name = fFile.split("/")[-1].split(".")[0]			# get category name
 		negatives = get_negative_data(category_name, random_features_dict)
+		#negatives = np.concatenate((negatives, neg),axis = 0)	# add far away negatives from same category to negatives coming from other categories
 		pos_labels = np.ones((len(dataT)))
 		neg_labels = -1*np.ones((len(negatives)))
 		svm_data = np.concatenate((dataT,negatives),axis = 0)
 		svm_labels = np.concatenate((pos_labels, neg_labels))
+
 		svm_data, svm_labels = shuffle_in_unison(svm_data, svm_labels)
-		clf = SVC(0.1,kernel = 'linear')			# define SVM classifier
+		clf = LogisticRegression()				# define Logistic Regression classifier
+		#clf = SVC(0.1,kernel = 'linear')			# define SVM classifier
 		clf.fit(svm_data, svm_labels)
 		optimal_hyperplane = np.concatenate((np.asarray(clf.intercept_).copy().reshape((1,1)),clf.coef_.copy()),axis=1)	# concatenate [bias,weight]
 		optimal_hyperplane = optimal_hyperplane.reshape(optimal_hyperplane.shape[1])
-		
-		
+		#print np.shape(val_input), np.shape(val_data)		
+
 		val_input = np.concatenate((val_input,val_data),axis=0)
 		train_input = np.concatenate((train_input,train_data),axis=0)
 		val_output = np.concatenate((val_output,[optimal_hyperplane,]*val_data.shape[0]),axis=0)
 		train_output = np.concatenate((train_output,[optimal_hyperplane,]*train_data.shape[0]),axis=0)
 		del optimal_hyperplane, clf, train_data, val_data, pos_labels, neg_labels, negatives, svm_data,svm_labels, dataT,val_indices
-		print str(round((time()-sTime),2))
+		
+
+		print "Category:",fFile_i+1,"took:",str(round((time()-sTime),2))
 		#print np.shape(val_input), np.shape(train_input), np.shape(val_output), np.shape(train_output)
-		if(fFile_i>0 and (fFile_i+1)%100==0):
+		if((fFile_i>0 and (fFile_i+1)%100==0)or(fFile_i==len(fileList)-1)):
 			print "Saving files",fFile_i+1
 			val_input = val_input[1:,:]
 			train_input = train_input[1:,:]
@@ -122,13 +146,13 @@ def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate 
 			val_input, val_output = shuffle_in_unison(val_input,val_output)
 			train_input, train_output = shuffle_in_unison(train_input,train_output)
 
-			f1 = h5py.File(pathToSave+str((fFile_i+1)/100)+'_val_temp.hdf5', 'w')				# create dataset for validation
+			f1 = h5py.File(pathToSave+str((fFile_i)/100+1)+'_val_temp.hdf5', 'w')				# create dataset for validation
 			f1.create_dataset('data', (val_input.shape[0], val_input.shape[1]), dtype='double')
 			f1.create_dataset('label', (val_output.shape[0], val_output.shape[1]), dtype='double')
 			f1['data'][...] = val_input
 			f1['label'][...] = val_output
 			f1.close()
-			f2 = h5py.File(pathToSave+str((fFile_i+1)/100)+'_train_temp.hdf5', 'w')				# create dataset for training
+			f2 = h5py.File(pathToSave+str((fFile_i)/100+1)+'_train_temp.hdf5', 'w')				# create dataset for training
 			f2.create_dataset('data', (train_input.shape[0], train_input.shape[1]), dtype='double')
 			f2.create_dataset('label', (train_output.shape[0], train_output.shape[1]), dtype='double')
 			f2['data'][...] = train_input
@@ -139,7 +163,7 @@ def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate 
 			train_input = np.zeros((1,inShape))
 			val_output = np.zeros((1,outShape))
 			train_output = np.zeros((1,outShape))
-
+	
 	print "Data created. Shuffling files..."
 	if os.path.exists(datasetPath+"val.txt"):
 		os.remove(datasetPath+"val.txt")
@@ -217,14 +241,19 @@ def createRegularDMTdata(featuresPath, datasetPath, pathToSave, howManyToCreate 
 		del f,f1, train_input, train_output
 	for j in xrange(howManyCreated):
 		os.remove(pathToSave+str(j+1)+'_train_temp.hdf5')	
-
+	
 #----------------------------------------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------------------------------------#
 #----------------------------------------------------------------------------------------------------------------------#
-#----------------------------------------------------------------------------------------------------------------------#
+def main():
+	d_name = "CUB_200_2011"
 
-#split_dataset_to_finetune("/media/jedrzej/SAMSUNG/DATA/CUB_200_2011/inception_features/", "/media/jedrzej/SAMSUNG/DATA/CUB_200_2011/inception_features_FT/", "/media/jedrzej/SAMSUNG/DATA/CUB_200_2011/inception_features_TEST/")
+	#split_dataset_to_finetune("/media/jedrzej/Seagate/DATA/"+d_name+"/inception_features/", "/media/jedrzej/Seagate/DATA/"+d_name+"/inception_features_FT/", "/media/jedrzej/Seagate/DATA/"+d_name+"/inception_features_TEST/")
 
 
-createRegularDMTdata("/media/jedrzej/Seagate/DATA/ILSVRC2012/inception_features/", "/media/jedrzej/Seagate/DATA/ILSVRC2012/", "/media/jedrzej/Seagate/DATA/ILSVRC2012/img2bound_data/")
+	createRegularTrainingData("/media/jedrzej/Seagate/DATA/ILSVRC2012/inception_features/", "/media/jedrzej/Seagate/DATA/ILSVRC2012/", "/media/jedrzej/Seagate/DATA/ILSVRC2012/img2bound_data_logistic/")
+	#createRegularTrainingData("/media/jedrzej/Seagate/DATA/"+d_name+"/inception_features_FT/", "/media/jedrzej/Seagate/DATA/"+d_name+"/", "/media/jedrzej/Seagate/DATA/"+d_name+"/img2bound_data/")
+
+if __name__ == "__main__":
+    main()
 
