@@ -16,8 +16,10 @@ This repository contains the code (Caffe) for "[CLEAR: Cumulative LEARnining One
 ## Introduction
 This work addresses the novel problem of one-shot one-class classification. The goal is to estimate a classification decision boundary for a novel class based on a single image example. Our method exploits transfer learning to model the transformation from a representation of the input, extracted by a Convolutional Neural Network, to a classification decision boundary. We use a deep neural network to learn this transformation from a large labelled dataset of images and their associated class decision boundaries generated from ImageNet, and then apply the learned decision boundary to classify subsequent query images. We tested our approach on several benchmark datasets and significantly outperformed the baseline methods.
 
+### Training pipeline
 <img align="center" src="https://github.com/JKozerawski/CLEAR-osoc/blob/master/clear_images/train_pipeline.png">
 
+### Testing pipeline
 <img align="center" src="https://github.com/JKozerawski/CLEAR-osoc/blob/master/clear_images/test_pipeline.png">
 
 ## Usage
@@ -28,7 +30,15 @@ This work addresses the novel problem of one-shot one-class classification. The 
 - ILSVRC2012 (for training)
 
 ### Train
-TO DO
+1. Extract features from all training images using the Inception V1 network (or other if preferred)
+2. Train One-Vs-Rest classifier for ever category using the extracted features (e.g. linear SVM)
+3. Select randomly training pairs:
+	- input: 	 feature extracted from an image
+	- target output: parameters of One-Vs-Rest classifier (for category that the input image belongs to)
+4. Create HDF5 files to train the network.
+5. Using our train_val files (link below) train the network.	
+
+TO BE COMPLETED
 
 ### Pretrained model
 
