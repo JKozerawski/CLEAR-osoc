@@ -11,13 +11,17 @@ This repository contains the code (Caffe) for "[CLEAR: Cumulative LEARnining One
   pages={3446--3455},
   year={2018}
 }
-
 ```
 
-## Abstract
+## Introduction
 This work addresses the novel problem of one-shot one-class classification. The goal is to estimate a classification decision boundary for a novel class based on a single image example. Our method exploits transfer learning to model the transformation from a representation of the input, extracted by a Convolutional Neural Network, to a classification decision boundary. We use a deep neural network to learn this transformation from a large labelled dataset of images and their associated class decision boundaries generated from ImageNet, and then apply the learned decision boundary to classify subsequent query images. We tested our approach on several benchmark datasets and significantly outperformed the baseline methods.
 
 ## Usage
+
+### Dependencies
+- Caffe
+- Numpy
+- ILSVRC2012 (for training)
 
 ### Train
 TO DO
