@@ -2,7 +2,7 @@
 
 This repository contains the code (Caffe) for "[CLEAR: Cumulative LEARnining One Shot One Class Image Recognition](http://openaccess.thecvf.com/content_cvpr_2018/CameraReady/3412.pdf)" paper (CVPR 2018) by [Jedrzej Kozerawski](https://github.com/JKozerawski/) and [Matthew Turk](http://www.cs.ucsb.edu/~mturk/).
 
-[CVPR Poster](https://drive.google.com/open?id=17zFHS1Zq719cFYTrFd-G6QGSsj3VLSML)
+Our CVPR poster is available [here](https://drive.google.com/open?id=17zFHS1Zq719cFYTrFd-G6QGSsj3VLSML)
 
 ### Citation
 ```
