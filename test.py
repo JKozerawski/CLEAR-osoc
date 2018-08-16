@@ -12,7 +12,7 @@ def run_net(clearNet, image_path, extractionNet):
 	
 	# extract feature witn Inception V1:
 	extractionNet.blobs['data'].reshape(1,3,224,224)	# reshape input to make sure it matches size of the batch (in this example batch of size 1)
-	feature = extractionNet.forward_all(**{extractionNet.inputs[0]: image, "blobs": ["pool/7x7_s1"]})["pool/7x7_s1"].copy()
+	feature = extractionNet.forward_all(**{extractionNet.inputs[0]: image, "blobs": ["pool5/7x7_s1"]})["pool5/7x7_s1"].copy()
 	feature = feature.reshape(1,1024)
 
 	# run the network:
@@ -45,7 +45,7 @@ if __name__ == "__main__":
 	extractionNet = CaffeFeatureExtractor(
 		model_path = FLAGS.inception_model_dir+"googlenet_deploy.prototxt",
 		pretrained_path = FLAGS.inception_model_dir+"bvlc_googlenet.caffemodel",
-		blob = "pool/7x7_s1",
+		blob = "pool5/7x7_s1",
 		crop_size = 224,
 		mean_values = [104.0, 117.0, 123.0]		
 		)
