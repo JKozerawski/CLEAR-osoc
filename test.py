@@ -8,11 +8,12 @@ def preprocess(image_path, extractionNet):
 	
 def run_net(clearNet, image_path, extractionNet):
 	# read and preprocess images:
-	image = preprocess(image_path, extractionNet)
+	#image = preprocess(image_path, extractionNet)
 	
 	# extract feature witn Inception V1:
 	extractionNet.blobs['data'].reshape(1,3,224,224)	# reshape input to make sure it matches size of the batch (in this example batch of size 1)
-	feature = extractionNet.forward_all(**{extractionNet.inputs[0]: image, "blobs": ["pool5/7x7_s1"]})["pool5/7x7_s1"].copy()
+	feature = extractionNet.extract_feature(caffe.io.load(image_path))
+	#feature = extractionNet.forward_all(**{extractionNet.inputs[0]: image, "blobs": ["pool5/7x7_s1"]})["pool5/7x7_s1"].copy()
 	feature = feature.reshape(1,1024)
 
 	# run the network:
